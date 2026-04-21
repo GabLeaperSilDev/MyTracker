@@ -1,0 +1,591 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#007aff" id="theme-color-meta">
+<title>Tracker 2026</title>
+<!-- Manifest injetado dinamicamente -->
+<link rel="manifest" id="manifest-link">
+<style>
+  :root {
+    --primary: #007aff;
+    --bg-color: #f2f2f7;
+    --card-bg: #ffffff;
+    --text-main: #1c1c1e;
+    --text-muted: #8e8e93;
+    --border-color: #e5e5ea;
+    --yes-color: #34c759;
+    --yes-bg: #e5f9e7;
+    --no-color: #ff3b30;
+    --no-bg: #ffebe9;
+    --btn-bg: rgba(0,0,0,0.05);
+  }
+
+  /* Tema Escuro Automático */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-color: #000000;
+      --card-bg: #1c1c1e;
+      --text-main: #f2f2f7;
+      --text-muted: #98989d;
+      --border-color: #38383a;
+      --yes-color: #30d158;
+      --yes-bg: rgba(48, 209, 88, 0.15);
+      --no-color: #ff453a;
+      --no-bg: rgba(255, 69, 58, 0.15);
+      --btn-bg: rgba(255,255,255,0.1);
+    }
+  }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg-color);
+    color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 30px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  header {
+    text-align: center;
+    padding: 20px 15px;
+    font-weight: 700;
+    font-size: 24px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background: rgba(var(--card-bg), 0.8);
+  }
+
+  .tabs {
+    display: flex;
+    justify-content: space-around;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 67px;
+    z-index: 99;
+  }
+
+  .tab {
+    padding: 15px;
+    cursor: pointer;
+    flex-grow: 1;
+    text-align: center;
+    color: var(--text-muted);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-bottom: 3px solid transparent;
+  }
+
+  .tab.active {
+    color: var(--primary);
+    font-weight: 600;
+    border-bottom: 3px solid var(--primary);
+  }
+
+  .view {
+    display: none;
+    padding: 15px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .view.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .month {
+    margin-bottom: 30px;
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+
+  .month h3 {
+    margin-top: 0;
+    text-transform: capitalize;
+    font-size: 18px;
+    color: var(--primary);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+  }
+
+  .weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+
+  .day {
+    background: var(--bg-color);
+    border-radius: 10px;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 65px;
+    transition: transform 0.15s, background-color 0.2s;
+  }
+
+  .day.empty {
+    background: transparent;
+    pointer-events: none;
+  }
+
+  .day-label {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .actions {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  button {
+    border: none;
+    background: var(--btn-bg);
+    font-size: 14px;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.1s;
+  }
+  
+  button:active { transform: scale(0.85); }
+
+  .locked.status-yes {
+    background: var(--yes-bg);
+    border: 1px solid var(--yes-color);
+    color: var(--yes-color);
+  }
+  .locked.status-no {
+    background: var(--no-bg);
+    border: 1px solid var(--no-color);
+    color: var(--no-color);
+  }
+  
+  .locked .actions { display: none; }
+  
+  .locked::after {
+    content: attr(data-icon);
+    font-size: 20px;
+    margin-top: auto;
+    margin-bottom: 2px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  }
+
+  .stat-box {
+    background: var(--card-bg);
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .stat-box strong {
+    font-size: 18px;
+    color: var(--text-main);
+  }
+
+  .stat-numbers {
+    display: flex;
+    gap: 15px;
+    font-size: 16px;
+    font-weight: bold;
+  }
+  
+  .stat-yes { color: var(--yes-color); }
+  .stat-no { color: var(--no-color); }
+
+  .out-of-range {
+    opacity: 0.2;
+    pointer-events: none;
+  }
+
+  #loading-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    font-weight: bold;
+    font-size: 18px;
+    transition: opacity 0.3s;
+  }
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">Carregando seus dados...</div>
+
+<header>Tracker 2026</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('calendar')">Calendário</div>
+  <div class="tab" onclick="showTab('stats')">Estatísticas</div>
+</div>
+
+<div id="calendar" class="view active"></div>
+<div id="stats" class="view"></div>
+
+<!-- Firebase Modular SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+  // ==========================================
+  // 1. PWA & OFFLINE CACHE (MANIFEST/SW)
+  // ==========================================
+  const manifestData = {
+    "name": "Tracker 2026",
+    "short_name": "Tracker",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#007aff",
+    "icons": [{
+      "src": "https://cdn-icons-png.flaticon.com/512/1828/1828919.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }]
+  };
+  const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+  document.getElementById('manifest-link').href = URL.createObjectURL(manifestBlob);
+
+  const swCode = `
+    const CACHE_NAME = 'tracker-v3';
+    self.addEventListener('install', e => self.skipWaiting());
+    self.addEventListener('activate', e => self.clients.claim());
+    self.addEventListener('fetch', e => {
+      if(e.request.url.includes('firestore') || e.request.url.includes('firebase')) return;
+      e.respondWith(
+        caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+          return caches.open(CACHE_NAME).then(cache => {
+            cache.put(e.request, res.clone());
+            return res;
+          });
+        }))
+      );
+    });
+  `;
+  const swBlob = new Blob([swCode], { type: 'application/javascript' });
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+  }
+
+  // ==========================================
+  // 2. ARMAZENAMENTO OFFLINE (IndexedDB)
+  // Substitui o localStorage que é frágil em PWAs
+  // ==========================================
+  const LocalDB = {
+    async get() {
+      return new Promise((resolve) => {
+        const req = indexedDB.open("Tracker2026DB", 1);
+        req.onupgradeneeded = e => e.target.result.createObjectStore("store");
+        req.onsuccess = e => {
+          const db = e.target.result;
+          if(!db.objectStoreNames.contains("store")) return resolve({});
+          const tx = db.transaction("store", "readonly");
+          const req2 = tx.objectStore("store").get("trackerData");
+          req2.onsuccess = () => resolve(req2.result || {});
+          req2.onerror = () => resolve({});
+        };
+        req.onerror = () => resolve({});
+      });
+    },
+    async save(data) {
+      const req = indexedDB.open("Tracker2026DB", 1);
+      req.onsuccess = e => {
+        const tx = e.target.result.transaction("store", "readwrite");
+        tx.objectStore("store").put(data, "trackerData");
+      };
+    }
+  };
+
+  // ==========================================
+  // 3. LÓGICA DO APP E CLOUD (Firestore)
+  // ==========================================
+  const start = new Date("2026-04-21T00:00:00");
+  const end = new Date("2026-12-31T23:59:59");
+  
+  let trackerData = {};
+  let dbRef = null;
+  let useFirebase = false;
+
+  window.showTab = function(tab) {
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.getElementById(tab).classList.add("active");
+    
+    const clickedTab = Array.from(document.querySelectorAll('.tab')).find(el => el.getAttribute('onclick').includes(tab));
+    if(clickedTab) clickedTab.classList.add("active");
+
+    if (tab === "stats") renderStats();
+  }
+
+  function renderCalendar() {
+    const container = document.getElementById("calendar");
+    container.innerHTML = "";
+    let current = new Date(start.getFullYear(), start.getMonth(), 1);
+    const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    while (current <= end) {
+      const monthDiv = document.createElement("div");
+      monthDiv.className = "month";
+
+      const title = document.createElement("h3");
+      title.innerText = current.toLocaleString("pt-BR", {month: "long", year: "numeric"});
+
+      const weekdaysDiv = document.createElement("div");
+      weekdaysDiv.className = "weekdays";
+      diasSemana.forEach(d => {
+        const dDiv = document.createElement("div");
+        dDiv.innerText = d;
+        weekdaysDiv.appendChild(dDiv);
+      });
+
+      const grid = document.createElement("div");
+      grid.className = "grid";
+
+      let date = new Date(current.getFullYear(), current.getMonth(), 1);
+      
+      for (let i = 0; i < date.getDay(); i++) {
+        const emptyDiv = document.createElement("div");
+        emptyDiv.className = "day empty";
+        grid.appendChild(emptyDiv);
+      }
+
+      while (date.getMonth() === current.getMonth()) {
+        const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        const dStr = localDate.toISOString().split("T")[0];
+
+        const div = document.createElement("div");
+        div.className = "day";
+        
+        const label = document.createElement("div");
+        label.className = "day-label";
+        label.innerText = date.getDate();
+        div.appendChild(label);
+
+        const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const compareStart = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        const compareEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+        if (compareDate >= compareStart && compareDate <= compareEnd) {
+          const actions = document.createElement("div");
+          actions.className = "actions";
+
+          const btnYes = document.createElement("button"); btnYes.innerText = "✅";
+          const btnNo = document.createElement("button"); btnNo.innerText = "❌";
+
+          if (trackerData[dStr]) {
+            div.classList.add("locked", trackerData[dStr] === "yes" ? "status-yes" : "status-no");
+            div.setAttribute('data-icon', trackerData[dStr] === "yes" ? "✅" : "❌");
+          }
+
+          const markDay = (status, icon) => {
+            if (!trackerData[dStr]) {
+              trackerData[dStr] = status;
+              div.classList.add("locked", status === "yes" ? "status-yes" : "status-no");
+              div.setAttribute('data-icon', icon);
+              
+              // Salva offline nativamente
+              LocalDB.save(trackerData);
+              // Salva na nuvem se disponível (ambiente de testes)
+              if (useFirebase && dbRef) {
+                setDoc(dbRef, { [dStr]: status }, { merge: true }).catch(console.error);
+              }
+            }
+          };
+
+          btnYes.onclick = () => markDay("yes", "✅");
+          btnNo.onclick  = () => markDay("no", "❌");
+
+          actions.appendChild(btnYes);
+          actions.appendChild(btnNo);
+          div.appendChild(actions);
+        } else {
+          div.classList.add("out-of-range");
+        }
+
+        grid.appendChild(div);
+        date.setDate(date.getDate() + 1);
+      }
+
+      monthDiv.appendChild(title);
+      monthDiv.appendChild(weekdaysDiv);
+      monthDiv.appendChild(grid);
+      container.appendChild(monthDiv);
+      current.setMonth(current.getMonth() + 1);
+    }
+  }
+
+  function count(periodFn) {
+    let yes = 0, no = 0;
+    for (let d in trackerData) {
+      const date = new Date(d + "T12:00:00"); 
+      if (periodFn(date)) {
+        if (trackerData[d] === "yes") yes++;
+        else no++;
+      }
+    }
+    return {yes, no};
+  }
+
+  function renderStats() {
+    const stats = document.getElementById("stats");
+    stats.innerHTML = "";
+    const now = new Date();
+
+    const week = count(d => {
+      const diff = (now - d) / (1000*60*60*24);
+      return diff <= 7 && diff >= -1;
+    });
+
+    const month = count(d => d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear());
+    const total = count(() => true);
+
+    stats.innerHTML += box("Últimos 7 Dias", week);
+    stats.innerHTML += box("Mês Atual", month);
+    stats.innerHTML += box("Total Acumulado", total);
+  }
+
+  function box(title, obj) {
+    return `
+      <div class="stat-box">
+        <strong>${title}</strong>
+        <div class="stat-numbers">
+          <span class="stat-yes">✅ ${obj.yes}</span>
+          <span class="stat-no">❌ ${obj.no}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function hideLoading() {
+    const loader = document.getElementById("loading-overlay");
+    loader.style.opacity = '0';
+    setTimeout(() => loader.style.display = 'none', 300);
+  }
+
+  // Inicialização Híbrida: Carrega Local primeiro, tenta Nuvem depois
+  async function initApp() {
+    trackerData = await LocalDB.get();
+    renderCalendar();
+    
+    try {
+      if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+        const config = JSON.parse(__firebase_config);
+        if(Object.keys(config).length > 0) {
+          useFirebase = true;
+          const app = initializeApp(config);
+          const auth = getAuth(app);
+          const db = getFirestore(app);
+          const appId = typeof __app_id !== 'undefined' ? __app_id : 'tracker';
+
+          const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+              await signInAnonymously(auth);
+            }
+          };
+          
+          await initAuth();
+          onAuthStateChanged(auth, (user) => {
+            if (user) {
+              dbRef = doc(db, 'artifacts', appId, 'users', user.uid, 'appData', '2026');
+              onSnapshot(dbRef, (snap) => {
+                if (snap.exists()) {
+                  trackerData = { ...trackerData, ...snap.data() };
+                  LocalDB.save(trackerData); // Sincroniza nuvem -> local
+                  renderCalendar();
+                  if(document.getElementById('stats').classList.contains('active')) renderStats();
+                }
+                hideLoading();
+              }, (err) => {
+                console.error("Erro Nuvem:", err);
+                hideLoading();
+              });
+            }
+          });
+          return; // Sai se Firebase iniciou bem
+        }
+      }
+    } catch(e) { console.log("Rodando totalmente offline local"); }
+    
+    hideLoading(); // Esconde se rodar localmente sem Firebase
+  }
+
+  // Notificações
+  function checkNotification() {
+    if (Notification.permission === "granted") {
+      const now = new Date();
+      if (now.getHours() >= 22) {
+        const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+        const today = localDate.toISOString().split("T")[0];
+
+        if (!trackerData[today] && !sessionStorage.getItem("notified_" + today)) {
+          new Notification("⚠️ Você não marcou hoje!", {
+            body: "Abra o Tracker e registre seu dia.",
+            icon: "https://cdn-icons-png.flaticon.com/512/1828/1828919.png"
+          });
+          sessionStorage.setItem("notified_" + today, "true");
+        }
+      }
+    }
+  }
+
+  initApp();
+  setInterval(checkNotification, 60000);
+  if ("Notification" in window && Notification.permission === "default") {
+    setTimeout(() => Notification.requestPermission(), 5000);
+  }
+</script>
+</body>
+</html>
+
+
+```
+  
